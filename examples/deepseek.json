@@ -1,13 +1,13 @@
 {
-  "_comment": "DeepSeek via the Anthropic-compatible endpoint. Copy to ~/.claude/statusline.json. Prices are CNY per 1M tokens: [cache-hit, input, output], off-peak.",
+  "_comment": "DeepSeek via the Anthropic-compatible endpoint. Copy to ~/.claude/statusline.json. Rates are CNY per 1M tokens: [cache-hit, input, output], OFF-PEAK, from the official price sheet (verified 2026-10-30). Peak = 2x, weekdays 09:00-12:00 / 14:00-18:00 Beijing time.",
 
   "currency": { "symbol": "￥", "code": "CNY" },
 
   "models": {
-    "deepseek-flash":    [0.02,  1.0, 4.0],
-    "deepseek-v4-flash": [0.02,  1.0, 2.0],
-    "deepseek-v4-pro":   [0.025, 3.0, 6.0],
-    "deepseek-pro":      [0.025, 3.0, 6.0]
+    "deepseek-flash":               [0.02, 1.0, 4.0],
+    "deepseek-v4-flash":            [0.02, 1.0, 4.0],
+    "deepseek-v4-flash-vision-exp": [0.02, 1.0, 4.0],
+    "deepseek-v4-pro":              [0.15, 4.5, 13.5]
   },
 
   "peak": {
