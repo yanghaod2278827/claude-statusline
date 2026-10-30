@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+
+# runtime state (per-machine, never commit)
+state.json
+balance.json
+*.lock
+*.tmp
+.tmpdata*/
+.debug/

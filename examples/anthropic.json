@@ -1,0 +1,14 @@
+{
+  "_comment": "Minimal config for the Anthropic API / Claude subscription. Cost comes straight from the payload ($ cost.total_cost_usd), so no price table is needed. Delete the `models`/`peak`/`balance` keys entirely to run with pure defaults — this file only exists to show what is available.",
+
+  "currency": { "symbol": "$", "code": "USD" },
+
+  "show": {
+    "session_name": true,
+    "cache_hit": true,
+    "balance": false,
+    "token_rate": true
+  },
+
+  "labels": { "balance": "bal", "turns": "turns", "peak": "◉ peak", "offpeak": "○ off-peak" }
+}

@@ -1,0 +1,27 @@
+{
+  "_comment": "DeepSeek via the Anthropic-compatible endpoint. Copy to ~/.claude/statusline.json. Prices are CNY per 1M tokens: [cache-hit, input, output], off-peak.",
+
+  "currency": { "symbol": "￥", "code": "CNY" },
+
+  "models": {
+    "deepseek-flash":    [0.02,  1.0, 4.0],
+    "deepseek-v4-flash": [0.02,  1.0, 2.0],
+    "deepseek-v4-pro":   [0.025, 3.0, 6.0],
+    "deepseek-pro":      [0.025, 3.0, 6.0]
+  },
+
+  "peak": {
+    "multiplier": 2.0,
+    "weekdays_only": true,
+    "windows": [[9, 12], [14, 18]]
+  },
+
+  "balance": {
+    "url": "{base}/user/balance",
+    "format": "deepseek",
+    "ttl": 120,
+    "retry": 120
+  },
+
+  "labels": { "balance": "余", "turns": "轮", "peak": "◉ 高峰", "offpeak": "○ 平峰" }
+}
