@@ -75,9 +75,11 @@ DEEPSEEK = {
 }
 
 
-def with_peak(cfg):
+def with_peak(cfg, holidays=None):
     c = json.loads(json.dumps(cfg))
     c['peak'] = {'multiplier': 2.0, 'weekdays_only': True, 'windows': [[9, 12], [14, 18]]}
+    if holidays is not None:
+        c['peak']['holidays'] = holidays
     return c
 
 
@@ -111,6 +113,35 @@ def test_weekend_not_peak(tmp):
     line = render(tmp, {'transcript_path': tp}, with_peak(DEEPSEEK))
     got = money_in(line)
     check(got and abs(got[0] - 0.10) < 0.005, 'weekend stays off-peak -> ￥0.10', str(got))
+
+
+def test_holidays(tmp):
+    """A public holiday is off-peak all day even when it falls Mon-Fri.
+    2026 National Day: 1-7 Oct (10-05 was a Monday)."""
+    cfg = with_peak(DEEPSEEK, ['2026-10-01..2026-10-07'])
+
+    tp = os.path.join(tmp, 'holi.jsonl')
+    write_transcript(tp, [assistant('mh1', '2026-10-05T10:00:00+08:00',
+                                   'deepseek-flash', n_in=100000)])
+    line = render(tmp, {'transcript_path': tp}, cfg)
+    got = money_in(line)
+    check(got and abs(got[0] - 0.10) < 0.005, 'holiday on a Monday -> off-peak ￥0.10', str(got))
+
+    # same weekday, one day after the holiday window closes -> peak again
+    tp2 = os.path.join(tmp, 'holi2.jsonl')
+    write_transcript(tp2, [assistant('mh2', '2026-10-08T10:00:00+08:00',
+                                    'deepseek-flash', n_in=100000)])
+    line = render(tmp, {'transcript_path': tp2}, cfg)
+    got = money_in(line)
+    check(got and abs(got[0] - 0.20) < 0.005, 'day after holiday -> peak ￥0.20', str(got))
+
+    # a malformed entry must be ignored, not crash
+    tp3 = os.path.join(tmp, 'holi3.jsonl')
+    write_transcript(tp3, [assistant('mh3', '2026-10-08T10:00:00+08:00',
+                                    'deepseek-flash', n_in=100000)])
+    line = render(tmp, {'transcript_path': tp3},
+                  with_peak(DEEPSEEK, ['not-a-date', '2026-10-01..2026-10-07']))
+    check('Traceback' not in line, 'malformed holiday entry is ignored', line)
 
 
 def test_token_rate(tmp):
@@ -224,8 +255,8 @@ def test_robustness(tmp):
 
 def main():
     tests = [test_cost_dedup, test_peak_multiplier, test_weekend_not_peak,
-             test_token_rate, test_compact_json, test_passthrough, test_context,
-             test_balance, test_robustness]
+             test_holidays, test_token_rate, test_compact_json, test_passthrough,
+             test_context, test_balance, test_robustness]
     for i, fn in enumerate(tests):
         tmp = tempfile.mkdtemp(prefix='sl_test_%d_' % i)
         try:

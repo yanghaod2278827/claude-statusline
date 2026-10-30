@@ -62,8 +62,11 @@ DEFAULT_CONFIG = {
     # Optional peak/off-peak multiplier. `null` disables it.
     #   weekdays_only: Mon-Fri only (weekends always off-peak)
     #   windows: [start_hour, end_hour) pairs, local time
+    #   holidays: date ranges that count as off-peak regardless of weekday,
+    #             as "YYYY-MM-DD" or "YYYY-MM-DD..YYYY-MM-DD"
     'peak': None,
-    # {  'multiplier': 2.0, 'weekdays_only': true, 'windows': [[9, 12], [14, 18]] }
+    # {  'multiplier': 2.0, 'weekdays_only': true, 'windows': [[9, 12], [14, 18]],
+    #    'holidays': ['2026-10-01..2026-10-07'] }
 
     # Optional account balance probe. `null` disables it.
     #   url:    may contain {base} = ANTHROPIC_BASE_URL minus the "/anthropic" tail
@@ -178,9 +181,37 @@ def to_epoch(ts):
     return datetime.fromisoformat(ts.replace('Z', '+00:00')).timestamp()
 
 
-def peak_multiplier(dt, peak):
+def parse_holidays(spec):
+    """['2026-10-01..2026-10-07', '2026-01-01'] -> [(date, date), ...]
+
+    Invalid entries are skipped rather than raising: a typo in the config must
+    not take the status line down.
+    """
+    from datetime import date
+    out = []
+    for item in spec or ():
+        try:
+            text = str(item).strip()
+            if '..' in text:
+                a, b = text.split('..', 1)
+                out.append((date.fromisoformat(a.strip()), date.fromisoformat(b.strip())))
+            else:
+                d = date.fromisoformat(text)
+                out.append((d, d))
+        except ValueError:
+            continue
+    return out
+
+
+def peak_multiplier(dt, peak, holidays=()):
+    """Multiplier in force at `dt`. Holidays win over the weekday rule: public
+    holidays are billed off-peak all day even when they fall Mon-Fri."""
     if not peak:
         return 1.0
+    day = dt.date()
+    for start, end in holidays:
+        if start <= day <= end:
+            return 1.0
     if peak.get('weekdays_only', True) and dt.weekday() >= 5:
         return 1.0
     h = dt.hour
@@ -214,6 +245,7 @@ def scan(path, st, cfg):
 
     models = cfg.get('models') or {}
     peak_cfg = cfg.get('peak')
+    holidays = parse_holidays((peak_cfg or {}).get('holidays'))
 
     ids = set(st.get('ids') or [])
     peak, off = st.get('peak', 0.0), st.get('off', 0.0)
@@ -291,7 +323,7 @@ def scan(path, st, cfg):
         if rate:
             try:
                 dt = datetime.fromisoformat(ts.replace('Z', '+00:00')).astimezone()
-                mult = peak_multiplier(dt, peak_cfg)
+                mult = peak_multiplier(dt, peak_cfg, holidays)
             except ValueError:
                 mult = 1.0
             c = (n_hit * rate[0] + n_in * rate[1] + n_out * rate[2]) / 1e6 * mult
@@ -611,7 +643,8 @@ def main():
     if rate_part:
         tail.append(rate_part)
     if cfg.get('peak'):
-        peak_now = peak_multiplier(datetime.now().astimezone(), cfg['peak']) > 1.0
+        peak_now = peak_multiplier(datetime.now().astimezone(), cfg['peak'],
+                                   parse_holidays(cfg['peak'].get('holidays'))) > 1.0
         tail.append(f'{MAGENTA}{labels["peak"]}{RESET}' if peak_now
                     else f'{DIM}{labels["offpeak"]}{RESET}')
 

@@ -1,5 +1,5 @@
 {
-  "_comment": "DeepSeek via the Anthropic-compatible endpoint. Copy to ~/.claude/statusline.json. Rates are CNY per 1M tokens: [cache-hit, input, output], OFF-PEAK, from the official price sheet (verified 2026-10-30). Peak = 2x, weekdays 09:00-12:00 / 14:00-18:00 Beijing time.",
+  "_comment": "DeepSeek via the Anthropic-compatible endpoint. Copy to ~/.claude/statusline.json. Rates are CNY per 1M tokens: [cache-hit, input, output], OFF-PEAK, from the official price sheet (verified 2026-10-30). Peak = 2x, weekdays 09:00-12:00 / 14:00-18:00 Beijing time. The `holidays` list is China's 2026 public holidays (国办发明电〔2025〕7号); append each year's notice when it is published, or delete the key to ignore holidays.",
 
   "currency": { "symbol": "￥", "code": "CNY" },
 
@@ -13,7 +13,16 @@
   "peak": {
     "multiplier": 2.0,
     "weekdays_only": true,
-    "windows": [[9, 12], [14, 18]]
+    "windows": [[9, 12], [14, 18]],
+    "holidays": [
+      "2026-01-01..2026-01-03",
+      "2026-02-15..2026-02-23",
+      "2026-04-04..2026-04-06",
+      "2026-05-01..2026-05-05",
+      "2026-06-19..2026-06-21",
+      "2026-09-25..2026-09-27",
+      "2026-10-01..2026-10-07"
+    ]
   },
 
   "balance": {
