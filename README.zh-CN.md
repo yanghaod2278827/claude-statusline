@@ -43,7 +43,7 @@ Claude Code 状态栏生态已经很拥挤：[CCometixLine](https://github.com/H
 ## 安装
 
 ```bash
-git clone https://github.com/<you>/claude-statusline.git
+git clone https://github.com/yanghaod2278827/claude-statusline.git
 cd claude-statusline
 python3 install.py                        # 通用：美元，直接用 Claude Code 的账
 python3 install.py --provider deepseek    # 额外写入 DeepSeek 配置

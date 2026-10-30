@@ -43,7 +43,7 @@ There are also narrower DeepSeek-specific status lines that predate this one and
 ## Install
 
 ```bash
-git clone https://github.com/<you>/claude-statusline.git
+git clone https://github.com/yanghaod2278827/claude-statusline.git
 cd claude-statusline
 python3 install.py                        # generic: USD, straight from Claude Code
 python3 install.py --provider deepseek    # + write the DeepSeek config
