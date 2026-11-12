@@ -77,7 +77,10 @@ DEEPSEEK = {
 
 def with_peak(cfg, holidays=None):
     c = json.loads(json.dumps(cfg))
-    c['peak'] = {'multiplier': 2.0, 'weekdays_only': True, 'windows': [[9, 12], [14, 18]]}
+    # utc_offset pins the billing zone: message timestamps are +08:00, so the
+    # verdict must not depend on the machine's TZ (CI runners are UTC).
+    c['peak'] = {'multiplier': 2.0, 'weekdays_only': True,
+                 'windows': [[9, 12], [14, 18]], 'utc_offset': 8}
     if holidays is not None:
         c['peak']['holidays'] = holidays
     return c
@@ -99,10 +102,15 @@ def test_peak_multiplier(tmp):
     tp = os.path.join(tmp, 'peak.jsonl')
     write_transcript(tp, [assistant('m2', '2026-09-30T10:00:00+08:00',
                                    'deepseek-flash', n_in=100000)])
-    line = render(tmp, {'transcript_path': tp}, with_peak(DEEPSEEK))
+    line = render(tmp, {'transcript_path': tp}, with_peak(DEEPSEEK),
+                  {'STATUSLINE_FAKE_NOW': '2026-09-30T20:00:00+08:00'})
     got = money_in(line)
     check(got and abs(got[0] - 0.20) < 0.005, 'peak hours x2 -> ￥0.20', str(got))
-    check('○ off-peak' in line, 'off-peak label rendered from built-in defaults', line)
+    check('○ off-peak' in line,
+          'off-peak label with frozen clock (built-in default labels)', line)
+    peak_line = render(tmp, {'transcript_path': tp}, with_peak(DEEPSEEK),
+                       {'STATUSLINE_FAKE_NOW': '2026-09-30T10:00:00+08:00'})
+    check('◉ peak' in peak_line, 'peak label with frozen clock', peak_line)
 
 
 def test_weekend_not_peak(tmp):

@@ -92,7 +92,8 @@ Everything is optional. The script merges (in order) the first file it finds amo
 |:---|:---|
 | `models` | `model id → [cache-hit, input, output]`, cost per **1M tokens**, off-peak. If the current model is listed, cost is computed from the transcript instead of trusting `cost.total_cost_usd`. Empty = passthrough mode. |
 | `peak.multiplier` | Multiplier applied inside `windows` on weekdays (`weekdays_only: false` applies every day). |
-| `peak.windows` | `[start_hour, end_hour)` pairs in **local time**. |
+| `peak.windows` | `[start_hour, end_hour)` pairs in **local time**, or in the zone given by `peak.utc_offset`. |
+| `peak.utc_offset` | Hours east of UTC the windows are defined in — `8` for Beijing time. Use it when the provider bills in a fixed zone and your machine is elsewhere (otherwise a CI runner or an overseas laptop prices the wrong hours). Omit for local time. |
 | `peak.holidays` | Date ranges billed off-peak all day, as `"YYYY-MM-DD"` or `"YYYY-MM-DD..YYYY-MM-DD"`. Malformed entries are skipped. This is data, not code — append each year's calendar when it's published. |
 | `balance.url` | `{base}` expands to `ANTHROPIC_BASE_URL` minus its `/anthropic` tail. |
 | `balance.format` | `"deepseek"` reads `balance_infos[0].total_balance`; `"path"` reads a dot path from `balance.path` (e.g. `"data.credits"`). |
@@ -155,7 +156,7 @@ Python 3.8+. No third-party packages. Works on Linux, macOS, and Windows — inc
 ## Development
 
 ```bash
-python3 tests/test_statusline.py   # 23 assertions, stdlib only
+python3 tests/test_statusline.py   # 24 assertions, stdlib only
 python3 docs/make_demo.py          # regenerates docs/demo.svg from a sample run
 ```
 

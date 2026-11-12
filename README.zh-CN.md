@@ -92,7 +92,8 @@ python3 install.py --provider deepseek    # 额外写入 DeepSeek 配置
 |:---|:---|
 | `models` | `模型 id → [缓存命中, 输入未命中, 输出]`，**每 100 万 token** 的平峰价。当前模型在表里时，花费由转录自行计算，不再用 `cost.total_cost_usd`。留空 = 透传模式。 |
 | `peak.multiplier` | `windows` 内（工作日）的倍率；`weekdays_only: false` 则每天都算。 |
-| `peak.windows` | `[开始小时, 结束小时)`，**本地时间**。 |
+| `peak.windows` | `[开始小时, 结束小时)`，**本地时间**，或 `peak.utc_offset` 指定的时区。 |
+| `peak.utc_offset` | 峰谷窗口所属时区相对 UTC 的小时数——北京时间填 `8`。服务商按固定时区计费、而本机不在该时区时（如 CI 跑在 UTC、人在国外）必须填，否则会把峰谷算错。不填 = 用本地时间。 |
 | `peak.holidays` | 全天按平峰计的日期区间，写作 `"YYYY-MM-DD"` 或 `"YYYY-MM-DD..YYYY-MM-DD"`。格式错的条目会被跳过。这是**数据不是代码**——每年放假通知发布后追加即可。 |
 | `balance.url` | `{base}` 展开为 `ANTHROPIC_BASE_URL` 去掉末尾 `/anthropic` 的部分。 |
 | `balance.format` | `"deepseek"` 取 `balance_infos[0].total_balance`；`"path"` 按点路径取（如 `"data.credits"`）。 |
@@ -155,7 +156,7 @@ Python 3.8+，无第三方依赖。Linux / macOS / Windows 均可（含 Windows 
 ## 开发
 
 ```bash
-python3 tests/test_statusline.py   # 23 条断言，仅用标准库
+python3 tests/test_statusline.py   # 24 条断言，仅用标准库
 python3 docs/make_demo.py          # 由示例运行输出重新生成 docs/demo.svg
 ```
 

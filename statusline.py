@@ -62,6 +62,8 @@ DEFAULT_CONFIG = {
     # Optional peak/off-peak multiplier. `null` disables it.
     #   weekdays_only: Mon-Fri only (weekends always off-peak)
     #   windows: [start_hour, end_hour) pairs, local time
+    #   utc_offset: hours east of UTC the windows are defined in, e.g. 8 for
+    #             Beijing time. Omit to use the machine's local time.
     #   holidays: date ranges that count as off-peak regardless of weekday,
     #             as "YYYY-MM-DD" or "YYYY-MM-DD..YYYY-MM-DD"
     'peak': None,
@@ -208,6 +210,16 @@ def peak_multiplier(dt, peak, holidays=()):
     holidays are billed off-peak all day even when they fall Mon-Fri."""
     if not peak:
         return 1.0
+    # Billing windows belong to the provider's zone (DeepSeek = Beijing time),
+    # not to wherever this machine happens to be. Without utc_offset we keep the
+    # old local-time behaviour.
+    off = peak.get('utc_offset')
+    if off is not None:
+        try:
+            from datetime import timedelta, timezone
+            dt = dt.astimezone(timezone(timedelta(hours=float(off))))
+        except (TypeError, ValueError):
+            pass
     day = dt.date()
     for start, end in holidays:
         if start <= day <= end:
@@ -219,6 +231,24 @@ def peak_multiplier(dt, peak, holidays=()):
         if start <= h < end:
             return float(peak.get('multiplier', 2.0))
     return 1.0
+
+
+def peak_now(peak, holidays=()):
+    """Is peak in force right now? `STATUSLINE_FAKE_NOW` pins the clock so the
+    regression tests don't flip red during the weekday peak windows."""
+    from datetime import datetime
+    raw = os.environ.get('STATUSLINE_FAKE_NOW')
+    now = None
+    if raw:
+        try:
+            now = datetime.fromisoformat(raw)
+        except ValueError:
+            now = None
+    if now is None:
+        now = datetime.now().astimezone()
+    elif now.tzinfo is None:
+        now = now.astimezone()
+    return peak_multiplier(now, peak, holidays) > 1.0
 
 
 def scan(path, st, cfg):
@@ -365,6 +395,22 @@ def balance_value(data, cfg):
     return float(info['total_balance'])
 
 
+def balance_currency(data, cfg):
+    """Currency the provider reports alongside the balance.
+
+    DeepSeek puts it in `balance_infos[0].currency`; an explicit
+    `balance.currency` override wins. Empty when the provider doesn't say."""
+    spec = cfg.get('balance') or {}
+    if spec.get('currency'):
+        return str(spec['currency'])
+    if spec.get('format', 'deepseek') == 'deepseek':
+        try:
+            return str((data.get('balance_infos') or [{}])[0].get('currency') or '')
+        except (AttributeError, IndexError, TypeError):
+            return ''
+    return ''
+
+
 def load_balance():
     blob = read_json(BAL_CACHE, {})
     return blob if isinstance(blob, dict) else {}
@@ -393,7 +439,7 @@ def refresh_balance():
             data = json.loads(r.read().decode('utf-8'))
         total = balance_value(data, cfg)      # evaluate first: never half-write
         rec.update({'ts': time.time(), 'total': total,
-                    'cur': (cfg.get('balance') or {}).get('currency') or ''})
+                    'cur': balance_currency(data, cfg)})
     except Exception as e:
         rec['err'] = '%s: %s' % (type(e).__name__, e)
     atomic_write_json(BAL_CACHE, rec)
@@ -608,11 +654,16 @@ def main():
                 # First sight of this reading in this session: anchor here.
                 st['balBase'], st['balTs'] = custom, bts
                 save_state(tp, st, all_states)
+            bcur = (bal.get('cur') or '').strip()
+            code = ((cfg.get('currency') or {}).get('code') or '').strip()
+            # Provider reports a different currency than the price table: say so
+            # instead of printing the configured symbol over the wrong number.
+            bsuffix = f' {bcur}' if bcur and code and bcur != code else ''
             if bal.get('err'):
-                bal_part = f'{DIM}{labels["balance"]} {money(cfg, total)}{RESET}'
+                bal_part = f'{DIM}{labels["balance"]} {money(cfg, total)}{bsuffix}{RESET}'
             else:
                 bc = GREEN if total >= 20 else (YELLOW if total >= 5 else RED)
-                bal_part = f'{bc}{labels["balance"]} {money(cfg, total)}{RESET}'
+                bal_part = f'{bc}{labels["balance"]} {money(cfg, total)}{bsuffix}{RESET}'
 
     # ── token rate ──
     rate_part = None
@@ -643,9 +694,8 @@ def main():
     if rate_part:
         tail.append(rate_part)
     if cfg.get('peak'):
-        peak_now = peak_multiplier(datetime.now().astimezone(), cfg['peak'],
-                                   parse_holidays(cfg['peak'].get('holidays'))) > 1.0
-        tail.append(f'{MAGENTA}{labels["peak"]}{RESET}' if peak_now
+        in_peak = peak_now(cfg['peak'], parse_holidays(cfg['peak'].get('holidays')))
+        tail.append(f'{MAGENTA}{labels["peak"]}{RESET}' if in_peak
                     else f'{DIM}{labels["offpeak"]}{RESET}')
 
     parts.append(bal_part) if bal_part else None
