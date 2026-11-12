@@ -1,5 +1,7 @@
 # claude-statusline
 
+[![tests](https://github.com/yanghaod2278827/claude-statusline/actions/workflows/tests.yml/badge.svg)](https://github.com/yanghaod2278827/claude-statusline/actions/workflows/tests.yml)
+
 [Claude Code](https://claude.com/claude-code) 的单文件、零依赖状态栏，实时显示**当前会话花了多少钱**——用你自己的货币，按服务商**真实价目**计算。
 
 专为其他状态栏没能覆盖的场景而做：**Claude Code 接第三方 Anthropic 兼容接口**——DeepSeek、GLM、Kimi、OpenRouter、自建网关。

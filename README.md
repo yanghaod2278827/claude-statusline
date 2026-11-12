@@ -1,5 +1,7 @@
 # claude-statusline
 
+[![tests](https://github.com/yanghaod2278827/claude-statusline/actions/workflows/tests.yml/badge.svg)](https://github.com/yanghaod2278827/claude-statusline/actions/workflows/tests.yml)
+
 A single-file, zero-dependency status line for [Claude Code](https://claude.com/claude-code) that shows **what the current session is costing you** — live, in your own currency, at your provider's real rates.
 
 Built for the case the other status lines don't cover: **Claude Code pointed at a third-party, Anthropic-compatible API** — DeepSeek, GLM, Kimi, OpenRouter, a self-hosted gateway.
